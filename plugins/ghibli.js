@@ -1,8 +1,8 @@
-const axios = require("axios")
-const FormData = require("form-data")
-const { Module } = require("../lib/plugins")
+import axios from 'axios';
+import FormData from 'form-data';
+import { Module } from '../lib/plugins.js';
 
-Module({command:"ghibli",
+export default Module({command:"ghibli",
         package:"style",
         description:"Transform image into Studio Ghibli style"
   })(async(message)=>{

@@ -1,7 +1,7 @@
-const {Module} = require('../lib/plugins');
-const axios = require("axios");
+import { Module } from '../lib/plugins.js';
+import axios from "axios";
 
-Module({
+export default Module({
   command: "lyrics",
   package: "info",
   description: "Get song lyrics"

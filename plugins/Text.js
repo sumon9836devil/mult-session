@@ -1,7 +1,7 @@
-const { Module } = require('../lib/plugins');
+import { Module } from '../lib/plugins.js';
 
 // Fancy Text Generator
-Module({
+export default Module({
     command: 'fancy',
     package: 'converter',
     description: 'Convert text to fancy styles'

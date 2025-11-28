@@ -1,5 +1,5 @@
 // randomphotolink.js
-const crypto = require("crypto");
+import crypto from 'crypto';
 
 const photoLinks = [
   "https://i.postimg.cc/yxzShQDT/𝙎𝙒𝙄𝙋𝙀-𝙋𝙄𝘾𝙎-GC-link-in-bio-𝘿𝙈-𝙋𝘼𝙄𝘿-𝙁𝙊𝙍-𝙋𝙍𝙊𝙈𝙊𝙏𝙄𝙊𝙉-5.webp",
@@ -40,5 +40,4 @@ function getRandomPhoto() {
   return photoLinks[index];
 }
 
-// Export for use in other files
-module.exports = { getRandomPhoto };
+export { getRandomPhoto };

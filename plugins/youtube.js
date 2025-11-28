@@ -1,8 +1,8 @@
-const fs = require("fs");
-const axios = require("axios");
-const yts = require("yt-search");
-const fetch = require("node-fetch");
-const { Module } = require("../lib/plugins");
+import fs from "fs";
+import axios from "axios";
+import yts from "yt-search";
+import fetch from "node-fetch";
+import { Module } from "../lib/plugins.js";
 
 const x = "AIzaSyDLH31M0HfyB7Wjttl6QQudyBEq5x9s1Yg";
 
@@ -59,7 +59,7 @@ async function handleSongDownload(conn, input, message) {
   const urlRegex = /(?:youtube\.com\/.*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
   if (!urlRegex.test(input)) {
     // Search for the song
-    await message.react("🔍");
+    await message.conn.sendMessage(message.from, { react: { text: "🔍", key: message.key } }).catch(() => {});
     const searchResults = await yts(input);
     if (!searchResults.videos || searchResults.videos.length === 0) {
       return await message.send("❌ No results found");
@@ -74,7 +74,7 @@ async function handleSongDownload(conn, input, message) {
   }
 
   // Download audio
-  await message.react("⬇️");
+  await message.conn.sendMessage(message.from, { react: { text: "⬇️", key: message.key } }).catch(() => {});
   const audioData = await downloadYtAudio(videoUrl);
 
   // Download the audio file
@@ -83,7 +83,7 @@ async function handleSongDownload(conn, input, message) {
   });
 
   // Send audio with thumbnail and link preview
-  await message.react("🎧");
+  await message.conn.sendMessage(message.from, { react: { text: "🎧", key: message.key } }).catch(() => {});
   await conn.sendMessage(message.from, {
     audio: Buffer.from(audioBuffer.data),
     mimetype: "audio/mpeg",
@@ -151,28 +151,35 @@ async function handleVideoDownload(conn, input, message, resolution = "720p") {
   });
 }
 
-Module({
+export default Module({
   command: "yts",
   package: "search",
   description: "Search YouTube videos",
 })(async (message, match) => {
-  if (!match) return await message.send("Please provide a search query");
-  const query = match.trim();
-  const results = await ytSearch(query, 10);
-  if (!results.length) return await message.send("❌ No results found");
+  try {
+    if (!match) return await message.conn.sendMessage(message.from, { text: "Please provide a search query" });
+    const query = match.trim();
+    const results = await ytSearch(query, 10);
+    if (!results.length) return await message.conn.sendMessage(message.from, { text: "❌ No results found" });
 
-  let reply = `*YouTube results for "${query}":*\n\n`;
-  results.forEach((v, i) => {
-    const date = new Date(v.publishedAt).toISOString().split("T")[0];
-    reply += `⬢ ${i + 1}. ${v.title}\n   Channel: ${
-      v.channel
-    }\n   Published: ${date}\n   Link: ${v.url}\n\n`;
-  });
+    let reply = `*YouTube results for "${query}":*\n\n`;
+    results.forEach((v, i) => {
+      const date = new Date(v.publishedAt).toISOString().split("T")[0];
+      reply += `⬢ ${i + 1}. ${v.title}\n   Channel: ${
+        v.channel
+      }\n   Published: ${date}\n   Link: ${v.url}\n\n`;
+    });
 
-  await message.send({
-    image: { url: results[0].thumbnail },
-    caption: reply,
-  });
+    await message.send({
+      image: { url: results[0].thumbnail },
+      caption: reply,
+    });
+  } catch (err) {
+    console.error("[PLUGIN YTS] Error:", err?.message || err);
+    try {
+      await message.conn.sendMessage(message.from, { text: `❌ Error: ${err?.message || err}` });
+    } catch (_) {}
+  }
 });
 
 Module({

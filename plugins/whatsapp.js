@@ -1,12 +1,12 @@
-const { Module } = require("../lib/plugins");
-const config = require("../config");
-const { getTheme } = require("../Themes/themes");
-const axios = require("axios");
+import { Module } from '../lib/plugins.js';
+import config from '../config.js';
+import { getTheme } from '../Themes/themes.js';
+import axios from 'axios';
 const theme = getTheme();
 
 // ==================== USER MANAGEMENT ====================
 
-Module({
+export default Module({
   command: "block",
   package: "owner",
   description: "Block a user",

@@ -1,7 +1,7 @@
-const { Module } = require("../lib/plugins");
-const Translator = require("../lib/Class/translate");
+import { Module } from "../lib/plugins.js";
+import Translator from "../lib/Class/translate.js";
 
-Module({
+export default Module({
   command: "trt",
   package: "mics",
   description: "Translate text to any language",

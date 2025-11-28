@@ -1,17 +1,17 @@
-const { Module } = require("../lib/plugins");
-const config = require("../config");
-const { getTheme } = require("../Themes/themes");
+import { Module } from "../lib/plugins.js";
+import config from "../config.js";
+import { getTheme } from "../Themes/themes.js";
 const theme = getTheme();
 
 // ==================== EXTENDED OWNER MENU ====================
 
-Module({
+export default Module({
   command: "myprivacy",
   package: "owner",
   description: "Manage WhatsApp privacy settings",
 })(async (message, match) => {
   try {
-    if (!message.isfromMe) return message.send(theme.isfromMe);
+    if (!message.isFromMe) return message.send(theme.isfromMe);
 
     if (!match) {
       const help = `
@@ -128,7 +128,7 @@ Module({
   description: "Get user profile picture in full quality",
 })(async (message) => {
   try {
-    if (!message.isfromMe) return message.send(theme.isfromMe);
+    if (!message.isFromMe) return message.send(theme.isfromMe);
 
     const jid =
       message.quoted?.participant ||

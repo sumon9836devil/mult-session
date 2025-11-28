@@ -1,7 +1,7 @@
-const axios = require("axios");
-const { Module } = require("../lib/plugins");
+import axios from "axios";
+import { Module } from "../lib/plugins.js";
 
-Module({
+export default Module({
   command: "img",
   package: "search",
   description: "Search and download original quality images from Google",

@@ -1,5 +1,5 @@
-const axios = require("axios");
-const { Module } = require('../lib/plugins');
+import axios from 'axios';
+import { Module } from '../lib/plugins.js';
 
 // Helper function to fetch JSON
 async function fetchJson(url) {
@@ -8,7 +8,7 @@ async function fetchJson(url) {
 }
 
 // 3D Comic
-Module({
+export default Module({
   command: "3dcomic",
   package: "logo",
   description: "Create a 3D Comic-style text effect"

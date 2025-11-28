@@ -1,6 +1,6 @@
-const { groupDB } = require("../lib/database");
-const { Module } = require("../lib/plugins");
-const { getTheme } = require("../Themes/themes");
+import { groupDB } from '../lib/database.js';
+import { Module } from '../lib/plugins.js';
+import { getTheme } from '../Themes/themes.js';
 const theme = getTheme();
 const defaultWords = [
   "sex",
@@ -12,10 +12,9 @@ const defaultWords = [
   "chuda",
   "fuck",
   "nude",
-  "bobs",
-  "vagina",
 ];
-Module({
+
+export default Module({
   command: "antiword",
   package: "group",
   description: "Manage antiword settings",

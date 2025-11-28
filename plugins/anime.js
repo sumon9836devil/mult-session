@@ -1,8 +1,8 @@
-const {Module} = require('../lib/plugins');
-const axios = require('axios');
-const he = require('he');
+import { Module } from '../lib/plugins.js';
+import axios from 'axios';
+import he from 'he';
 
-Module({
+export default Module({
   command: 'anime',
   package: 'info',
   description: 'Get anime info from Anilist'

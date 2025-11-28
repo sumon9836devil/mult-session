@@ -1,22 +1,18 @@
 // ============================================
-// index.js - Main Server
+// index.js - Main Server (ESM + Multi-User)
 // ============================================
 import express from "express";
-import { createBaileysConnection } from "./lib/connection.js";
-import { sessions } from "./lib/session.js";
+import { fileURLToPath } from "url";
+import path from "path";
+import fs from "fs-extra";
+import { createBaileysConnection, logoutSession } from "./lib/connection.js";
+import { sessions, getAllSessions, restoreSessions } from "./lib/session.js";
 import { generatePairingCode } from "./lib/pairing.js";
-const Boom = require("@hapi/boom");
-const path = require("path");
-const { db } = require("./lib/blockDB");
-const { ref, set, get, remove, child } = require("firebase/database");
-const config = require("./config");
-const fs = require("fs-extra");
-const {
-  initSessions,
-  saveSession,
-  getAllSessions,
-  deleteSession,
-} = require("./lib/database/index");
+import config from "./config.js";
+import cache from "./lib/cache.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,23 +26,16 @@ async function startBot(number) {
   try {
     console.log(`🔄 [${number}] Starting bot...`);
 
-    const sessionDir = path.join(__dirname, "sessions", number);
+    const sessionDir = path.join(__dirname, "auth", number);
     await fs.ensureDir(sessionDir);
 
-    await createBaileysConnection(sessionId, phoneNumber);
+    const conn = await createBaileysConnection(number);
     if (!conn) {
       console.error(`❌ [${number}] Failed to create connection`);
       return null;
     }
 
-    // ✅ Save credentials to database
-    const credPath = path.join(sessionDir, "creds.json");
-    if (fs.existsSync(credPath)) {
-      const creds = fs.readJSONSync(credPath);
-      await saveSession(number, creds);
-      console.log(`✅ [${number}] Session saved to database`);
-    }
-
+    console.log(`✅ [${number}] Connection created successfully`);
     return conn;
   } catch (err) {
     console.error(`❌ Failed to start bot for ${number}:`, err);
@@ -55,96 +44,75 @@ async function startBot(number) {
 }
 
 /**
- * Restore all sessions from DB + local
+ * Restore all sessions from DB + local storage
  */
-async function restoreSessions() {
+async function initializeSessions() {
   const baileys = await import("baileys");
   const { delay } = baileys;
 
   try {
-    console.log("🌱 Syncing Database...");
-    await config.DATABASE.sync();
+    console.log("🌱 Initializing bot sessions...");
 
-    const baseDir = path.join(__dirname, "sessions");
+    const baseDir = path.join(__dirname, "auth");
     await fs.ensureDir(baseDir);
 
-    // 1️⃣ Get sessions from DB
-    const dbSessions = await getAllSessions();
-    const dbNumbers = dbSessions.map((s) => s.number);
-
-    // 2️⃣ Get sessions from local folder
-    const folderNumbers = (await fs.readdir(baseDir)).filter((f) =>
+    // Get all session folders
+    const folders = await fs.readdir(baseDir);
+    const sessionNumbers = folders.filter((f) =>
       fs.existsSync(path.join(baseDir, f, "creds.json"))
     );
 
-    // 3️⃣ Merge DB + Folder (avoid duplicates)
-    const allNumbers = [...new Set([...dbNumbers, ...folderNumbers])];
-
-    if (!allNumbers.length) {
-      console.log("⚠️ No sessions found in DB or local folders.");
+    if (!sessionNumbers.length) {
+      console.log("⚠️ No existing sessions found. Use /pair endpoint to add new sessions.");
       return;
     }
 
     console.log(
-      `♻️ Restoring ${
-        allNumbers.length
-      } sessions at ${new Date().toLocaleString()}...`
+      `♻️ Restoring ${sessionNumbers.length} sessions...`
     );
 
-    // ✅ Restore sessions with delay to avoid rate limits
-    for (const number of allNumbers) {
+    // Restore sessions with delay to avoid rate limits
+    for (const number of sessionNumbers) {
       try {
-        const sessionDir = path.join(baseDir, number);
-        await fs.ensureDir(sessionDir);
-        const credPath = path.join(sessionDir, "creds.json");
-
-        let creds;
-
-        // 4️⃣ If folder has creds → sync to DB
-        if (fs.existsSync(credPath)) {
-          creds = await fs.readJSON(credPath);
-          await saveSession(number, creds);
-        }
-        // 5️⃣ Else if DB has creds → write to folder
-        else {
-          const dbSession = dbSessions.find((s) => s.number === number);
-          if (dbSession?.creds) {
-            creds = dbSession.creds;
-            await fs.writeJSON(credPath, creds, { spaces: 2 });
-          }
-        }
-
-        // 6️⃣ Start the bot
-        if (creds) {
-          console.log(`🔄 Restoring session for ${number}...`);
-          await startBot(number);
-
-          // ✅ Add delay between sessions to avoid connection issues
-          await delay(2000);
-        } else {
-          await deleteSession(number);
-          console.log(`⚠️ No creds found for ${number}, skipping...`);
-        }
+        console.log(`🔄 Restoring session for ${number}...`);
+        await startBot(number);
+        await delay(2000); // Delay between session starts
       } catch (err) {
+        // Do NOT delete session on temporary error
         console.error(`❌ Failed restoring session for ${number}:`, err);
+        // Log to a file for admin review
+        try {
+          await fs.appendFile(
+            path.join(__dirname, "restore-errors.log"),
+            `[${new Date().toISOString()}] Session ${number} restore failed: ${err.message}\n`
+          );
+        } catch (logErr) {
+          console.error("❌ Failed to log restore error:", logErr);
+        }
       }
     }
+
+    console.log(`✅ Initialization complete. ${sessions.size} sessions active.`);
   } catch (err) {
-    console.error("❌ restoreSessions() failed:", err);
+    console.error("❌ initializeSessions() failed:", err);
   }
 }
 
 // ==================== ROUTES ====================
 
 app.get("/", (req, res) => {
+  const activeSessions = Array.from(sessions.keys());
   res.json({
     status: "online",
     timestamp: new Date().toISOString(),
-    sessions: manager.connections.size,
+    activeSessions: activeSessions.length,
+    sessions: activeSessions,
   });
 });
 
-// Pair endpoint
+/**
+ * Pair new device endpoint
+ */
 app.get("/pair", async (req, res) => {
   try {
     const { number } = req.query;
@@ -152,7 +120,7 @@ app.get("/pair", async (req, res) => {
     if (!number) {
       return res.status(400).json({
         success: false,
-        message: "Phone number is required",
+        message: "Phone number is required (e.g., ?number=1234567890)",
       });
     }
 
@@ -161,7 +129,7 @@ app.get("/pair", async (req, res) => {
     if (sessions.has(sessionId)) {
       return res.status(400).json({
         success: false,
-        message: "Session already exists",
+        message: "Session already exists for this number",
       });
     }
 
@@ -183,7 +151,9 @@ app.get("/pair", async (req, res) => {
   }
 });
 
-// Logout endpoint
+/**
+ * Logout endpoint
+ */
 app.get("/logout", async (req, res) => {
   try {
     const { number } = req.query;
@@ -196,22 +166,19 @@ app.get("/logout", async (req, res) => {
     }
 
     const sessionId = number.replace(/[^0-9]/g, "");
-    const session = sessions.get(sessionId);
 
-    if (!session) {
-      return res.status(404).json({
+    const success = await logoutSession(sessionId);
+    if (success) {
+      res.json({
+        success: true,
+        message: `Session ${sessionId} logged out successfully`,
+      });
+    } else {
+      res.status(404).json({
         success: false,
         message: "Session not found",
       });
     }
-
-    await session.sock.logout();
-    sessions.delete(sessionId);
-
-    res.json({
-      success: true,
-      message: "Logged out successfully",
-    });
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).json({
@@ -221,9 +188,15 @@ app.get("/logout", async (req, res) => {
   }
 });
 
-// Status endpoint
+/**
+ * Status endpoint
+ */
 app.get("/status", (req, res) => {
-  const activeSessions = Array.from(sessions.keys());
+  const activeSessions = Array.from(sessions.keys()).map((id) => ({
+    sessionId: id,
+    botNumber: sessions.get(id)?.botNumber || "Unknown",
+  }));
+
   res.json({
     success: true,
     activeSessions: activeSessions.length,
@@ -231,8 +204,75 @@ app.get("/status", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Pair: http://localhost:${PORT}/pair?number=YOUR_NUMBER`);
-  console.log(`🚪 Logout: http://localhost:${PORT}/logout?number=YOUR_NUMBER`);
+/**
+ * Reconnect endpoint
+ */
+app.get("/reconnect", async (req, res) => {
+  try {
+    const { number } = req.query;
+
+    if (!number) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required",
+      });
+    }
+
+    const sessionId = number.replace(/[^0-9]/g, "");
+
+    // Logout first
+    await logoutSession(sessionId);
+    await new Promise((r) => setTimeout(r, 1000));
+
+    // Reconnect
+    const conn = await createBaileysConnection(sessionId);
+    if (conn) {
+      res.json({
+        success: true,
+        message: `Session ${sessionId} reconnected successfully`,
+      });
+    } else {
+      throw new Error("Failed to reconnect");
+    }
+  } catch (error) {
+    console.error("Reconnect error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 });
+
+// ==================== STARTUP ====================
+
+app.listen(PORT, async () => {
+  console.log(`\n${"=".repeat(50)}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`${"=".repeat(50)}`);
+  console.log(`📱 Pair new device: http://localhost:${PORT}/pair?number=YOUR_NUMBER`);
+  console.log(`📊 Check status: http://localhost:${PORT}/status`);
+  console.log(`🚪 Logout: http://localhost:${PORT}/logout?number=YOUR_NUMBER`);
+  console.log(`🔄 Reconnect: http://localhost:${PORT}/reconnect?number=YOUR_NUMBER`);
+  console.log(`${"=".repeat(50)}\n`);
+
+  // Initialize existing sessions
+  try {
+    // Initialize cache (Redis or in-memory fallback)
+    try {
+      await cache.init();
+    } catch (e) {
+      console.warn('⚠️ Cache init failed:', e.message);
+    }
+
+    // Ensure database tables are created
+    if (config?.DATABASE && typeof config.DATABASE.sync === 'function') {
+      await config.DATABASE.sync();
+      console.log('✅ Database synced');
+    }
+  } catch (dbErr) {
+    console.error('❌ Failed to sync database:', dbErr.message);
+  }
+
+  await initializeSessions();
+});
+

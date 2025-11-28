@@ -1,9 +1,9 @@
-const { groupDB } = require("../lib/database");
-const { Module } = require("../lib/plugins");
-const { getTheme } = require("../Themes/themes");
+import { groupDB } from '../lib/database.js';
+import { Module } from '../lib/plugins.js';
+import { getTheme } from '../Themes/themes.js';
 const theme = getTheme();
 
-Module({
+export default Module({
   command: "welcome",
   package: "group",
   description: "Set or control welcome message",

@@ -1,7 +1,7 @@
-const { Module } = require('../lib/plugins');
-const util = require('util');
+import { Module } from '../lib/plugins.js';
+import util from 'util';
 
-Module({
+export default Module({
   on: 'text'
 })(async (message) => {
   if (!message.body.startsWith('>')) return;

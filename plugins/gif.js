@@ -1,6 +1,6 @@
-const { fetchGif, gifToVideo } = require("../lib/fetchGif");
-const { Module } = require("../lib/plugins");
-const axios = require("axios");
+import { fetchGif, gifToVideo } from "../lib/fetchGif.js";
+import { Module } from "../lib/plugins.js";
+import axios from "axios";
 
 // Define reactions with their API endpoints
 const reactions = {
@@ -186,7 +186,7 @@ async function sendReactionGif(message, reactionType) {
 }
 
 // Method 1: Auto reaction (typing just "kiss", "hug", etc.)
-Module({ on: "text" })(async (message) => {
+export default Module({ on: "text" })(async (message) => {
   try {
     const text = (message.body || "").toLowerCase().trim();
 

@@ -1,9 +1,9 @@
-const { Module } = require('../lib/plugins');
-const axios = require('axios');
-const sticker = require('../lib/sticker');
-const config = require('../config');
+import { Module } from '../lib/plugins.js';
+import axios from 'axios';
+import sticker from '../lib/sticker.js';
+import config from '../config.js';
 
-Module({
+export default Module({
   command: 'emojimix',
   package: 'media',
   description: 'Combine 2 emojis'

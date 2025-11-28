@@ -1,7 +1,7 @@
-const { Module } = require("../lib/plugins");
-const { getTheme } = require("../Themes/themes");
+import { Module } from '../lib/plugins.js';
+import { getTheme } from '../Themes/themes.js';
 const theme = getTheme();
-Module({
+export default Module({
   command: "tagall",
   package: "group",
   description: "Tag all group members with custom style",

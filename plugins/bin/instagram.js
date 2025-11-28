@@ -1,5 +1,5 @@
-const f = require('node-fetch');
-const c = require('cheerio');
+import fetch from 'node-fetch';
+import { load as cheerioLoad } from 'cheerio';
 
 /*
 Diegoson 
@@ -7,7 +7,7 @@ Diegoson
 
 async function instaSave(url) {
   const u = 'https://insta-save.net/content.php';
-  const r = await f(`${u}?url=${url}`, {
+  const r = await fetch(`${u}?url=${url}`, {
     headers: {
       'User-Agent': 'Mozilla/5.0',
       'Referer': 'https://insta-save.net/'
@@ -16,7 +16,7 @@ async function instaSave(url) {
 
   const j = await r.json();
   if (j.status !== 'ok') throw new Error('fail');
-  const $ = c.load(j.html);
+  const $ = cheerioLoad(j.html);
   const el = $('#download_content .col-md-4.position-relative').first();
   const jpg = el.find('img.load').attr('src') || el.find('img').attr('src') || null;
   const mp4 = el.find('a.btn.bg-gradient-success').attr('href') || null;
@@ -29,4 +29,4 @@ async function instaSave(url) {
   return { JPEG: jpg, MP4: mp4, likes, comments, description, profileName, timeAgo };
 }
 
-module.exports = instaSave;
+export default instaSave;

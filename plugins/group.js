@@ -1,5 +1,5 @@
-const { Module } = require("../lib/plugins");
-const { getTheme } = require("../Themes/themes");
+import { Module } from "../lib/plugins.js";
+import { getTheme } from "../Themes/themes.js";
 const theme = getTheme();
 
 // ==================== HELPER FUNCTIONS ====================
@@ -108,12 +108,12 @@ const extractMultipleJids = (message) => {
 
 // ==================== MEMBER MANAGEMENT ====================
 
-Module({
+export default Module({
   command: "add",
   package: "group",
   description: "Add member to group",
   usage: ".add <number|reply|tag>",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -174,7 +174,7 @@ Module({
   aliases: ["remove"],
   description: "Remove member from group",
   usage: ".kick <reply|tag>",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -245,7 +245,7 @@ Module({
   package: "group",
   description: "Promote member to admin",
   usage: ".promote <reply|tag>",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -315,7 +315,7 @@ Module({
   package: "group",
   description: "Demote admin to member",
   usage: ".demote <reply|tag>",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -379,7 +379,7 @@ Module({
   package: "group",
   aliases: ["adminlist"],
   description: "List all group admins",
-})(async (message) => {
+})(async (message) => { 
   try {
     await message.loadGroupInfo();
 
@@ -421,7 +421,7 @@ Module({
   package: "group",
   aliases: ["unmute"],
   description: "Allow all members to send messages",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -447,7 +447,7 @@ Module({
   package: "group",
   aliases: ["mute"],
   description: "Only admins can send messages",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -472,7 +472,7 @@ Module({
   command: "lock",
   package: "group",
   description: "Lock group info (only admins can edit)",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -493,7 +493,7 @@ Module({
   command: "unlock",
   package: "group",
   description: "Unlock group info (all members can edit)",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -518,7 +518,7 @@ Module({
   aliases: ["seticon", "setimage", "setgroupicon"],
   description: "Set group profile picture",
   usage: ".setgpp <reply to image>",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -562,7 +562,7 @@ Module({
   aliases: ["setname", "groupname"],
   description: "Change group name",
   usage: ".subject <new name>",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -595,7 +595,7 @@ Module({
   aliases: ["setdesc", "description"],
   description: "Change group description",
   usage: ".desc <new description>",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -629,7 +629,7 @@ Module({
   package: "group",
   aliases: ["ginfo", "gcinfo"],
   description: "Get detailed group information",
-})(async (message) => {
+})(async (message) => { 
   try {
     await message.loadGroupInfo();
 
@@ -685,7 +685,7 @@ Module({
   package: "group",
   aliases: ["link", "grouplink"],
   description: "Get group invite link",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -707,7 +707,7 @@ Module({
   package: "group",
   aliases: ["resetlink", "newlink"],
   description: "Revoke and generate new invite link",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -730,7 +730,7 @@ Module({
   package: "group",
   aliases: ["joinrequests", "pending"],
   description: "View pending join requests",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -763,7 +763,7 @@ Module({
   package: "group",
   aliases: ["acceptall", "approveall"],
   description: "Approve all pending join requests",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -792,7 +792,7 @@ Module({
   package: "group",
   aliases: ["rejectall"],
   description: "Reject all pending join requests",
-})(async (message) => {
+})(async (message) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -821,7 +821,7 @@ Module({
   package: "group",
   aliases: ["exit", "left"],
   description: "Bot leaves the group",
-})(async (message) => {
+})(async (message) => { 
   try {
     await message.loadGroupInfo();
 
@@ -852,7 +852,7 @@ Module({
   package: "group",
   description: "Create a poll in group",
   usage: ".poll Question | Option1 | Option2 | Option3",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     if (!message.isGroup) return message.send(theme.isGroup);
 
@@ -894,7 +894,7 @@ Module({
   aliases: ["ephemeral"],
   description: "Set disappearing messages",
   usage: ".disappear <0|24h|7d|90d>",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     if (!(await checkPermissions(message))) return;
 
@@ -939,7 +939,7 @@ Module({
   package: "group",
   description: "Send announcement to all members (DM)",
   usage: ".announce <message>",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     await message.loadGroupInfo();
 
@@ -989,7 +989,7 @@ Module({
   aliases: ["inv"],
   description: "Invite user via private message",
   usage: ".inviteuser <number>",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     await message.loadGroupInfo();
 
@@ -1035,7 +1035,7 @@ Module({
   aliases: ["all", "tagall"],
   description: "Tag all group members",
   usage: ".everyone <message>",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     await message.loadGroupInfo();
 
@@ -1068,7 +1068,7 @@ Module({
   aliases: ["htag"],
   description: "Tag all without showing numbers",
   usage: ".hidetag <message>",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     await message.loadGroupInfo();
 
@@ -1092,7 +1092,7 @@ Module({
   aliases: ["admintag"],
   description: "Tag all admins",
   usage: ".tagadmins <message>",
-})(async (message, match) => {
+})(async (message, match) => { 
   try {
     await message.loadGroupInfo();
 
@@ -1116,7 +1116,7 @@ Module({
   command: "totag",
   package: "group",
   description: "Tag users by replying to their message",
-})(async (message) => {
+})(async (message) => { 
   try {
     await message.loadGroupInfo();
 
@@ -1146,7 +1146,7 @@ Module({
   package: "group",
   aliases: ["gdp", "groupicon"],
   description: "Get group display picture",
-})(async (message) => {
+})(async (message) => { 
   try {
     await message.loadGroupInfo();
 
@@ -1173,7 +1173,7 @@ Module({
   package: "group",
   aliases: ["gstats"],
   description: "Get group statistics",
-})(async (message) => {
+})(async (message) => { 
   try {
     await message.loadGroupInfo();
 
@@ -1218,7 +1218,7 @@ Module({
   command: "gmenu",
   package: "general",
   description: "Show all group management commands",
-})(async (message) => {
+})(async (message) => { 
   try {
     const help = `╭━━━「 *GROUP COMMANDS* 」━━━╮
 ┃

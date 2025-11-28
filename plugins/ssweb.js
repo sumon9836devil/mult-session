@@ -1,7 +1,7 @@
-const { Module } = require('../lib/plugins');
-const axios = require('axios');
+import { Module } from '../lib/plugins.js';
+import axios from 'axios';
 
-Module({
+export default Module({
   command: 'ssweb',
   package: 'tools',
   description: 'Full-page web screenshot'
