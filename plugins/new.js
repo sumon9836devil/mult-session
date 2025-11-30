@@ -9,10 +9,10 @@ Module({
 });
 
 */
-import axios from "axios";
-import { Module } from "../lib/plugins.js";
+const axios = require("axios");
+const { Module } = require("../lib/plugins");
 
-export default Module({
+Module({
   command: "quote",
   package: "anime",
   description: "Get a random anime quote",

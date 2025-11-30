@@ -1,7 +1,7 @@
-import { Module } from '../lib/plugins.js';
-import fs from 'fs';
+const {Module} = require('../lib/plugins');
+const fs = require("fs");
 
-export default Module({
+Module({
   command: "getcmd",
   package: "tools",
   description: "Get file source code"

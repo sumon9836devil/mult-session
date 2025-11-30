@@ -1,8 +1,8 @@
-import axios from "axios";
-import { load as cheerioLoad } from "cheerio";
-import { Module } from "../lib/plugins.js";
+const axios = require("axios");
+const cheerio = require("cheerio");
+const { Module } = require("../lib/plugins");
 
-export default Module({
+Module({
   command: "pint",
   package: "downloader",
   description: "Search Pinterest images",
@@ -14,7 +14,7 @@ export default Module({
       maxRedirects: 5,
       headers: { "User-Agent": "Mozilla/5.0" },
     });
-    const $ = cheerioLoad(res.data);
+    const $ = cheerio.load(res.data);
     img = $('meta[property="og:image"]').attr("content");
     if (!img) return message.send("_not found_");
   } else {
@@ -23,7 +23,7 @@ export default Module({
     const { data } = await axios.get(url, {
       headers: { "User-Agent": "Mozilla/5.0" },
     });
-    const $ = cheerioLoad(data);
+    const $ = cheerio.load(data);
     const images = [];
     $("img").each((_, el) => {
       const src =

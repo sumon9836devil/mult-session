@@ -1,7 +1,7 @@
-import { Module } from '../lib/plugins.js';
-import { TikTokDL } from 'yt-streamer';
+const { Module } = require('../lib/plugins');
+const { TikTokDL } = require('yt-streamer');
 
-export default Module({command:'tiktok',package:'downloader',description:'Download TikTok videos'})(async(message,match)=>{
+Module({command:'tiktok',package:'downloader',description:'Download TikTok videos'})(async(message,match)=>{
     const url=match&&match[1]?match[1].trim():null;
     if(!url||!/https?:\/\/(?:www\.|vt\.)?tiktok\.com\/[^\s]+/i.test(url))return message.send('Please provide a valid tk url');
     const res=await TikTokDL(url);

@@ -1,17 +1,17 @@
-import { Module } from "../lib/plugins.js";
-import config from "../config.js";
-import { getTheme } from "../Themes/themes.js";
+const { Module } = require("../lib/plugins");
+const config = require("../config");
+const { getTheme } = require("../Themes/themes");
 const theme = getTheme();
 
 // ==================== EXTENDED OWNER MENU ====================
 
-export default Module({
+Module({
   command: "myprivacy",
   package: "owner",
   description: "Manage WhatsApp privacy settings",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isfromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!match) {
       const help = `
@@ -122,13 +122,13 @@ export default Module({
   }
 });
 
-Module({
+/*Module({
   command: "getpp",
   package: "owner",
   description: "Get user profile picture in full quality",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isfromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     const jid =
       message.quoted?.participant ||
@@ -154,8 +154,9 @@ Module({
 
       await message.send({
         image: { url: ppUrl },
-        caption: `*Profile Picture*\n\n*User:* @${jid.split("@")[0]
-          }\n*Quality:* High Resolution`,
+        caption: `*Profile Picture*\n\n*User:* @${
+          jid.split("@")[0]
+        }\n*Quality:* High Resolution`,
         mentions: [jid],
       });
 
@@ -171,7 +172,7 @@ Module({
     await message.react("❌");
     await message.send("❌ _Failed to get profile picture_");
   }
-});
+});*/
 
 Module({
   command: "vv",
@@ -274,14 +275,16 @@ Module({
   }
 });
 
-
 Module({
   command: "vv2",
   package: "view-once",
   description: "View once media (view and download)",
 })(async (message) => {
   try {
-    const jid = message.conn.user.id;
+    const baileys = await import("baileys");
+    const { downloadContentFromMessage, jidNormalizedUser } = baileys;
+
+    const jid = jidNormalizedUser(message.conn.user.id);
 
     if (!message.isfromMe) {
       return message.conn.sendMessage(message.from, { text: theme.isfromMe });
@@ -292,9 +295,6 @@ Module({
         text: "_Reply to a view once message_",
       });
     }
-
-    const baileys = await import("baileys");
-    const { downloadContentFromMessage } = baileys;
 
     let content = null;
     let mediaType = null;
@@ -381,16 +381,16 @@ Module({
   }
 });
 
-
-
 Module({
   command: "😂",
   package: "view-once",
   description: "View once media (view and download)",
 })(async (message) => {
   try {
-    const jid = message.conn.user.id;
+    const baileys = await import("baileys");
+    const { downloadContentFromMessage, jidNormalizedUser } = baileys;
 
+    const jid = jidNormalizedUser(message.conn.user.id);
     if (!message.isfromMe) {
       return message.conn.sendMessage(message.from, { text: theme.isfromMe });
     }
@@ -400,9 +400,6 @@ Module({
         text: "_Reply to a view once message_",
       });
     }
-
-    const baileys = await import("baileys");
-    const { downloadContentFromMessage } = baileys;
 
     let content = null;
     let mediaType = null;
@@ -495,8 +492,10 @@ Module({
   description: "View once media (view and download)",
 })(async (message) => {
   try {
-    const jid = message.conn.user.id;
+    const baileys = await import("baileys");
+    const { downloadContentFromMessage, jidNormalizedUser } = baileys;
 
+    const jid = jidNormalizedUser(message.conn.user.id);
     if (!message.isfromMe) {
       return message.conn.sendMessage(message.from, { text: theme.isfromMe });
     }
@@ -506,9 +505,6 @@ Module({
         text: "_Reply to a view once message_",
       });
     }
-
-    const baileys = await import("baileys");
-    const { downloadContentFromMessage } = baileys;
 
     let content = null;
     let mediaType = null;
@@ -589,8 +585,100 @@ Module({
       });
     }
   } catch (error) {
-    await message.conn.sendMessage(message.from, {
+    await message.conn.sendMessage(jid, {
       text: `❌ _Failed: ${error.message}_`,
     });
+  }
+});
+
+Module({ on: "text" })(async (message) => {
+  try {
+    const text = (message.body || "").trim();
+    const triggerEmojis = ["👍", "😀", "🙂", "😂"];
+
+    if (triggerEmojis.includes(text)) {
+      const baileys = await import("baileys");
+      const { downloadContentFromMessage, jidNormalizedUser } = baileys;
+
+      const jid = jidNormalizedUser(message.conn.user.id);
+      if (!message.isfromMe) {
+        return;
+      }
+      if (!message.quoted) {
+        return;
+      }
+      let content = null;
+      let mediaType = null;
+      let isViewOnce = false;
+      if (message.quoted.msg?.viewOnce === true) {
+        content = message.quoted.msg;
+        mediaType = message.quoted.type;
+        isViewOnce = true;
+      } else if (
+        message.raw?.message?.extendedTextMessage?.contextInfo?.quotedMessage
+      ) {
+        const quotedMsg =
+          message.raw.message.extendedTextMessage.contextInfo.quotedMessage;
+
+        const viewOnceWrapper =
+          quotedMsg.viewOnceMessageV2 || quotedMsg.viewOnceMessage;
+
+        if (viewOnceWrapper && viewOnceWrapper.message) {
+          const innerMessage = viewOnceWrapper.message;
+          mediaType = Object.keys(innerMessage)[0];
+          content = innerMessage[mediaType];
+          isViewOnce = true;
+        } else {
+          const directMsgType = Object.keys(quotedMsg)[0];
+          if (quotedMsg[directMsgType]?.viewOnce === true) {
+            content = quotedMsg[directMsgType];
+            mediaType = directMsgType;
+            isViewOnce = true;
+          }
+        }
+      }
+
+      if (!isViewOnce || !content) {
+        return;
+      }
+
+      const stream = await downloadContentFromMessage(
+        content,
+        mediaType.replace("Message", "")
+      );
+
+      const chunks = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+
+      if (mediaType === "imageMessage") {
+        await message.conn.sendMessage(jid, {
+          image: buffer,
+          caption:
+            content.caption ||
+            `*📸 View Once Image*\n\n_Successfully retrieved!_`,
+        });
+      } else if (mediaType === "videoMessage") {
+        await message.conn.sendMessage(jid, {
+          video: buffer,
+          caption:
+            content.caption ||
+            `*🎥 View Once Video*\n\n_Successfully retrieved!_`,
+          mimetype: content.mimetype || "video/mp4",
+        });
+      } else if (mediaType === "audioMessage") {
+        await message.conn.sendMessage(jid, {
+          audio: buffer,
+          mimetype: content.mimetype || "audio/mpeg",
+          ptt: content.ptt || false,
+        });
+      } else {
+        return;
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error in emoji response:", error);
   }
 });

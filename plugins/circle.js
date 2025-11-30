@@ -1,7 +1,7 @@
-import { Module } from '../lib/plugins.js';
-import StickerBuilder from '../lib/sticker.js';
+const {Module} = require('../lib/plugins');
+const StickerBuilder = require('../lib/sticker');
 
-export default Module({
+Module({
   command: "circle",
   package: "tools",
   description: "Convert an image into a circle"

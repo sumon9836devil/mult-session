@@ -1,8 +1,8 @@
-import fs from "fs";
-import axios from "axios";
-import yts from "yt-search";
-import fetch from "node-fetch";
-import { Module } from "../lib/plugins.js";
+const fs = require("fs");
+const axios = require("axios");
+const yts = require("yt-search");
+const fetch = require("node-fetch");
+const { Module } = require("../lib/plugins");
 
 const x = "AIzaSyDLH31M0HfyB7Wjttl6QQudyBEq5x9s1Yg";
 
@@ -23,17 +23,15 @@ async function ytSearch(query, max = 10) {
 }
 
 // Helper function to download audio using the new API
-async function downloadYtAudio(url) {
-  const apiUrl = `https://api.zenzxz.my.id/api/downloader/ytmp3?url=${encodeURIComponent(
-    url
-  )}`;
+async function downloadYtAudio(query) {
+  const apiUrl = `https://api.privatezia.biz.id/api/downloader/ytplaymp3?query=${encodeURIComponent(query)}`;
   const response = await axios.get(apiUrl);
 
-  if (!response.data || !response.data.success) {
+  if (!response.data || !response.data.status) {
     throw new Error("Failed to fetch audio data from API");
   }
 
-  return response.data.data;
+  return response.data.result;
 }
 
 // Helper function to download video using the new API
@@ -57,9 +55,66 @@ async function handleSongDownload(conn, input, message) {
 
   // Check if input is a URL or search query
   const urlRegex = /(?:youtube\.com\/.*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+
+  if (!urlRegex.test(input)) {
+    // Search for the song using the new API
+    await message.react("🔍");
+
+    try {
+      const audioData = await downloadYtAudio(input);
+
+      // Download the audio file
+      await message.react("⬇️");
+      const audioBuffer = await axios.get(audioData.downloadUrl, {
+        responseType: "arraybuffer",
+      });
+
+      // Send audio with thumbnail and link preview
+      await message.react("🎧");
+      await conn.sendMessage(message.from, {
+        audio: Buffer.from(audioBuffer.data),
+        mimetype: "audio/mpeg",
+        fileName: `${audioData.title}.mp3`,
+        contextInfo: {
+          externalAdReply: {
+            title: audioData.title,
+            body: `Duration: ${Math.floor(audioData.duration / 60)}:${(
+              audioData.duration % 60
+            )
+              .toString()
+              .padStart(2, "0")} | Quality: ${audioData.quality}`,
+            thumbnail: await axios
+              .get(audioData.thumbnail, { responseType: "arraybuffer" })
+              .then((res) => Buffer.from(res.data)),
+            mediaType: 2,
+            mediaUrl: audioData.videoUrl,
+            sourceUrl: audioData.videoUrl,
+          },
+        },
+      });
+
+    } catch (error) {
+      // Fallback to old method if new API fails
+      console.log("New API failed, falling back to old method:", error.message);
+      await fallbackSongDownload(conn, input, message);
+    }
+
+  } else {
+    // For URLs, use the old method
+    await fallbackSongDownload(conn, input, message);
+  }
+}
+
+// Fallback function for song downloads (original method)
+async function fallbackSongDownload(conn, input, message) {
+  let videoUrl = input;
+  let videoInfo = null;
+
+  const urlRegex = /(?:youtube\.com\/.*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+
   if (!urlRegex.test(input)) {
     // Search for the song
-    await message.conn.sendMessage(message.from, { react: { text: "🔍", key: message.key } }).catch(() => {});
+    await message.react("🔍");
     const searchResults = await yts(input);
     if (!searchResults.videos || searchResults.videos.length === 0) {
       return await message.send("❌ No results found");
@@ -73,9 +128,16 @@ async function handleSongDownload(conn, input, message) {
     videoInfo = searchResults;
   }
 
-  // Download audio
-  await message.conn.sendMessage(message.from, { react: { text: "⬇️", key: message.key } }).catch(() => {});
-  const audioData = await downloadYtAudio(videoUrl);
+  // Download audio using old API
+  await message.react("⬇️");
+  const apiUrl = `https://api.zenzxz.my.id/api/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`;
+  const response = await axios.get(apiUrl);
+
+  if (!response.data || !response.data.success) {
+    throw new Error("Failed to fetch audio data from API");
+  }
+
+  const audioData = response.data.data;
 
   // Download the audio file
   const audioBuffer = await axios.get(audioData.download_url, {
@@ -83,7 +145,7 @@ async function handleSongDownload(conn, input, message) {
   });
 
   // Send audio with thumbnail and link preview
-  await message.conn.sendMessage(message.from, { react: { text: "🎧", key: message.key } }).catch(() => {});
+  await message.react("🎧");
   await conn.sendMessage(message.from, {
     audio: Buffer.from(audioBuffer.data),
     mimetype: "audio/mpeg",
@@ -140,46 +202,37 @@ async function handleVideoDownload(conn, input, message, resolution = "720p") {
   // Send video with small link preview
   await conn.sendMessage(message.from, {
     video: Buffer.from(videoBuffer.data),
-    caption: `*${videoData.title}*\n\n📹 Quality: ${
-      videoData.format
-    }\n⏱️ Duration: ${Math.floor(videoData.duration / 60)}:${(
-      videoData.duration % 60
-    )
-      .toString()
-      .padStart(2, "0")}`,
+    caption: `*${videoData.title}*\n\n📹 Quality: ${videoData.format
+      }\n⏱️ Duration: ${Math.floor(videoData.duration / 60)}:${(
+        videoData.duration % 60
+      )
+        .toString()
+        .padStart(2, "0")}`,
     jpegThumbnail: Buffer.from(thumbnailBuffer.data),
   });
 }
 
-export default Module({
+Module({
   command: "yts",
   package: "search",
   description: "Search YouTube videos",
 })(async (message, match) => {
-  try {
-    if (!match) return await message.conn.sendMessage(message.from, { text: "Please provide a search query" });
-    const query = match.trim();
-    const results = await ytSearch(query, 10);
-    if (!results.length) return await message.conn.sendMessage(message.from, { text: "❌ No results found" });
+  if (!match) return await message.send("Please provide a search query");
+  const query = match.trim();
+  const results = await ytSearch(query, 10);
+  if (!results.length) return await message.send("❌ No results found");
 
-    let reply = `*YouTube results for "${query}":*\n\n`;
-    results.forEach((v, i) => {
-      const date = new Date(v.publishedAt).toISOString().split("T")[0];
-      reply += `⬢ ${i + 1}. ${v.title}\n   Channel: ${
-        v.channel
-      }\n   Published: ${date}\n   Link: ${v.url}\n\n`;
-    });
+  let reply = `*YouTube results for "${query}":*\n\n`;
+  results.forEach((v, i) => {
+    const date = new Date(v.publishedAt).toISOString().split("T")[0];
+    reply += `⬢ ${i + 1}. ${v.title}\n Channel: ${v.channel
+      }\n Published: ${date}\n Link: ${v.url}\n\n`;
+  });
 
-    await message.send({
-      image: { url: results[0].thumbnail },
-      caption: reply,
-    });
-  } catch (err) {
-    console.error("[PLUGIN YTS] Error:", err?.message || err);
-    try {
-      await message.conn.sendMessage(message.from, { text: `❌ Error: ${err?.message || err}` });
-    } catch (_) {}
-  }
+  await message.send({
+    image: { url: results[0].thumbnail },
+    caption: reply,
+  });
 });
 
 Module({

@@ -1,7 +1,7 @@
-import { Module } from '../lib/plugins.js';
-import moment from 'moment-timezone';
+const {Module} = require('../lib/plugins');
+const moment = require('moment-timezone');
 
-export default Module({
+Module({
   command: 'timezone',
   package: 'time',
   description: 'Get time info of a timezone'

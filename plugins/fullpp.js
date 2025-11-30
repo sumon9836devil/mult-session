@@ -1,7 +1,7 @@
-import { Module } from '../lib/plugins.js';
-import { getTheme } from '../Themes/themes.js';
+const { Module } = require("../lib/plugins");
+const { getTheme } = require("../Themes/themes");
 const theme = getTheme();
-export default Module({
+Module({
   command: "pp",
   package: "owner",
   description: "Set profile picture",

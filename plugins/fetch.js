@@ -1,7 +1,7 @@
-import axios from 'axios';
-import { Module } from '../lib/plugins.js';
+const axios = require('axios');
+const { Module } = require('../lib/plugins');
 
-export default Module({
+Module({
   command: 'get',
   package: 'tools',
   description: 'Download file, image, video, audio, etc',

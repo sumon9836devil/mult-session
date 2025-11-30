@@ -1,8 +1,8 @@
-import { Module } from '../lib/plugins.js';
-import Facebook from '../lib/Class/facebook.js';
-import UrlUtil from '../lib/UrlUtil.js';
+const { Module } = require('../lib/plugins');
+const Facebook = require('../lib/Class/facebook');
+const UrlUtil = require('../lib/UrlUtil');
 
-export default Module({
+Module({
   command: 'fb',
   package: 'downloader',
   description: 'Download Facebook videos'

@@ -1,12 +1,12 @@
-import { Module } from '../lib/plugins.js';
-import config from '../config.js';
-import { getTheme } from '../Themes/themes.js';
-import axios from 'axios';
+const { Module } = require("../lib/plugins");
+const config = require("../config");
+const { getTheme } = require("../Themes/themes");
+const axios = require("axios");
 const theme = getTheme();
 
 // ==================== USER MANAGEMENT ====================
 
-export default Module({
+Module({
   command: "block",
   package: "owner",
   description: "Block a user",
@@ -17,8 +17,10 @@ export default Module({
 
     let jid;
     if (message.quoted) {
-      // ✅ NEW: Handle both participant and participantAlt
-      jid = message.quoted.participant || message.quoted.participantAlt || message.quoted.sender;
+      jid =
+        message.quoted.participant ||
+        message.quoted.participantAlt ||
+        message.quoted.sender;
     } else if (message.mentions?.[0]) {
       jid = message.mentions[0];
     } else if (match) {
@@ -61,7 +63,10 @@ Module({
     let jid;
     if (message.quoted) {
       // ✅ NEW: Handle both participant and participantAlt
-      jid = message.quoted.participant || message.quoted.participantAlt || message.quoted.sender;
+      jid =
+        message.quoted.participant ||
+        message.quoted.participantAlt ||
+        message.quoted.sender;
     } else if (message.mentions?.[0]) {
       jid = message.mentions[0];
     } else if (match) {
@@ -205,8 +210,9 @@ Module({
     }
 
     await message.react("⏳");
-    // ✅ NEW: Use bot's own JID
-    const botJid = message.conn.user.id;
+    const baileys = await import("baileys");
+    const { jidNormalizedUser } = baileys;
+    const botJid = jidNormalizedUser(message.conn.user.id);
     await message.setPp(botJid, buffer);
     await message.react("✅");
 
@@ -230,11 +236,11 @@ Module({
     if (!message.isFromMe) return message.send(theme.isFromMe);
 
     await message.react("⏳");
-    
-    // ✅ NEW: Properly remove profile picture
-    const botJid = message.conn.user.id;
+    const baileys = await import("baileys");
+    const { jidNormalizedUser } = baileys;
+    const botJid = jidNormalizedUser(message.conn.user.id);
     await message.conn.removeProfilePicture(botJid);
-    
+
     await message.react("✅");
 
     await message.send(
@@ -336,8 +342,9 @@ Module({
   try {
     if (!message.isFromMe) return message.send(theme.isFromMe);
 
-    // ✅ NEW: Get bot JID properly (handles LID)
-    const myJid = message.conn.user.id.split(":")[0] + "@s.whatsapp.net";
+    const baileys = await import("baileys");
+    const { jidNormalizedUser } = baileys;
+    const myJid = jidNormalizedUser(message.conn.user.id);
     const status = await message.fetchStatus(myJid).catch(() => null);
 
     const bioText = status?.status || "_No status set_";
@@ -418,7 +425,7 @@ Module({
     if (message.isGroup) {
       await message.loadGroupInfo();
       // ✅ NEW: Use 'id' instead of 'jid' for participants
-      const participant = message.groupParticipants.find((p) => 
+      const participant = message.groupParticipants.find((p) =>
         message.areJidsSame ? message.areJidsSame(p.id, jid) : p.id === jid
       );
       groupName = participant?.notify || participant?.name;
@@ -519,12 +526,12 @@ Module({
     const jid = `${number}@s.whatsapp.net`;
 
     await message.react("⏳");
-    
+
     // ✅ NEW: Properly forward message
-    await message.conn.sendMessage(jid, { 
-      forward: message.quoted.raw || message.quoted 
+    await message.conn.sendMessage(jid, {
+      forward: message.quoted.raw || message.quoted,
     });
-    
+
     await message.react("✅");
 
     await message.send(`✅ *Message forwarded* to @${number}`, {
@@ -802,8 +809,6 @@ Module({
 })(async (message) => {
   try {
     if (!message.isFromMe) return message.send(theme.isFromMe);
-
-    // ✅ NEW: Handle both participant and participantAlt
     const jid =
       message.quoted?.participant ||
       message.quoted?.participantAlt ||

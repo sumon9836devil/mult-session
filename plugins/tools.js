@@ -1,11 +1,11 @@
-import { Module } from "../lib/plugins.js";
-import { personalDB } from "../lib/database/index.js";
-import config from "../config.js";
-import { getTheme } from "../Themes/themes.js";
+const { Module } = require("../lib/plugins");
+const { personalDB } = require("../lib/database");
+const config = require("../config");
+const { getTheme } = require("../Themes/themes");
 const theme = getTheme();
 
 // 🔹 Auto Status Seen
-export default Module({
+Module({
   command: "autostatus",
   package: "owner",
   description: "Toggle auto view WhatsApp status",

@@ -1,8 +1,8 @@
-import axios from 'axios';
-import { Module } from '../lib/plugins.js';
+const axios = require("axios");
+const { Module } = require('../lib/plugins');
 
 // Milf command
-export default Module({
+Module({
   command: "milf",
   package: "anime",
   description: "Download Milf Anime Images"

@@ -1,16 +1,16 @@
-import { Module } from '../lib/plugins.js';
-import config from '../config.js';
-import { getTheme } from '../Themes/themes.js';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import axios from 'axios';
-import FormData from 'form-data';
+const { Module } = require("../lib/plugins");
+const config = require("../config");
+const { getTheme } = require("../Themes/themes");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const axios = require("axios");
+const FormData = require("form-data");
 const theme = getTheme();
 
 // ==================== URL UPLOADER PLUGIN ====================
 
-export default Module({
+Module({
   command: "url",
   package: "converter",
   description: "Convert media to URL (upload to Catbox)",

@@ -1,199 +1,116 @@
-import { groupDB } from '../lib/database.js';
-import { Module } from '../lib/plugins.js';
-import { getTheme } from '../Themes/themes.js';
+const { Module } = require("../lib/plugins");
+const { personalDB } = require("../lib/database");
+const { getTheme } = require("../Themes/themes");
 const theme = getTheme();
 
-export default Module({
+// Shared defaults
+const DEFAULT_WELCOME = `
+*╭─〘 𝑾𝑬𝑳𝑪𝑶𝑴𝑬 〙─╮*
+│ Hey &mention 🎉
+│ Group: *&name*
+│ Members: *&size*
+╰─&pp`;
+
+const DEFAULT_GOODBYE = `
+*╭─〘 𝑮𝑶𝑶𝑫𝑩𝒀𝑬 〙─╮*
+│ Bye &mention 👋
+│ From *&name*
+│ Remaining: *&size*
+╰─&pp`;
+
+// ================= WELCOME =================
+Module({
   command: "welcome",
-  package: "group",
-  description: "Set or control welcome message",
+  package: "owner",
+  description: "Global welcome setup",
 })(async (message, match) => {
-  await message.loadGroupInfo();
-  if (!message.isGroup) return message.send(theme.isGroup);
-  if (!message.isAdmin && !message.isFromMe) return message.send(theme.isAdmin);
-
-  const defaultText = `
-  *╭ׂ┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄──*
-  *│  ̇─̣─̇─̣〘 ωєℓ¢σмє 〙̣─̇─̣─̇*
-  *├┅┅┅┅┈┈┈┈┈┈┈┈┈┅┅┅◆*
-  *│❀ нєу* &mention !
-  *│❀ gʀσᴜᴘ* &name
-  *├┅┅┅┅┈┈┈┈┈┈┈┈┈┅┅┅◆*
-  *│● ѕтαу ѕαfє αɴ∂ fσℓℓσω*
-  *│● тнє gʀσυᴘѕ ʀᴜℓєѕ!*
-  *│● ᴊσιɴє∂ &size*
-  *╰┉┉┉┉┈┈┈┈┈┈┈┈┉┉┉᛫᛭*
-   &pp `;
-
+  if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = message.conn.user.id.split(":")[0];
   match = (match || "").trim();
+
   const { welcome } =
-    (await groupDB(["welcome"], { jid: message.from, content: {} }, "get")) ||
-    {};
+    (await personalDB(["welcome"], {}, "get", botNumber)) || {};
   const status = welcome?.status === "true" ? "true" : "false";
   const currentMsg = welcome?.message || "";
 
   if (match.toLowerCase() === "get") {
-    if (status === "false") {
-      return await message.send(
-        `*🔹 Welcome Setup Example:*\n` +
-          `.welcome Hey &mention 👋\nWelcome to *&name* 🎉\nNow we are *&size* members 💎\n&pp\n\n` +
-          `*Options:*\n.welcome on – Enable welcome\n.welcome off – Disable welcome\n.welcome get – Show current welcome\n\n` +
-          `*Supports:* &mention, &name, &size, &pp`
-      );
-    }
-    return await message.send(`*🔹 Current Welcome Message:*\n${currentMsg}`);
+    return await message.send(
+      `*Current Welcome Message:*\n${currentMsg || DEFAULT_WELCOME}\n\nStatus: ${
+        status === "true" ? "✅ ON" : "❌ OFF"
+      }`
+    );
   }
 
-  if (match.toLowerCase() === "on") {
-    if (status === "true") return await message.send("_already activated_");
-
-    // If no message exists, automatically set the default message
-    const messageToSet = currentMsg || defaultText;
-
-    await groupDB(
+  if (match.toLowerCase() === "on" || match.toLowerCase() === "off") {
+    const isOn = match.toLowerCase() === "on";
+    await personalDB(
       ["welcome"],
-      {
-        jid: message.from,
-        content: { status: "true", message: messageToSet },
-      },
-      "set"
+      { content: { status: isOn ? "true" : "false", message: currentMsg || DEFAULT_WELCOME } },
+      "set",
+      botNumber
     );
-
-    if (!currentMsg) {
-      return await message.send(
-        "*welcome activated*\n> default welcome message has been set automatically"
-      );
-    }
-
-    return await message.send("*welcome activated*");
-  }
-
-  if (match.toLowerCase() === "off") {
-    if (status === "false") return await message.send("_already deactivated_");
-    await groupDB(
-      ["welcome"],
-      {
-        jid: message.from,
-        content: { status: "false", message: currentMsg },
-      },
-      "set"
-    );
-    return await message.send("*welcome deactivated*");
+    return await message.send(`✅ Welcome is now *${isOn ? "ON" : "OFF"}*`);
   }
 
   if (match.length) {
-    await groupDB(
+    await personalDB(
       ["welcome"],
-      {
-        jid: message.from,
-        content: { status, message: match },
-      },
-      "set"
+      { content: { status, message: match } },
+      "set",
+      botNumber
     );
-    return await message.send("*welcome message saved*\n> please on welcome");
+    return await message.send("✅ Custom welcome message saved!");
   }
 
   return await message.send(
-    `*🔹 Welcome Setup Example:*\n` +
-      `.welcome Hey &mention 👋\nWelcome to *&name* 🎉\nNow we are *&size* members 💎\n&pp\n\n` +
-      `*Options:*\n.welcome on – Enable welcome\n.welcome off – Disable welcome\n.welcome get – Show current welcome\n\n` +
-      `*Supports:* &mention, &name, &size, &pp`
+    `*Usage:*\n.welcome on/off/get\n.welcome <message>\n\n*Supports:* &mention, &name, &size, &pp`
   );
 });
 
+// ================= GOODBYE =================
 Module({
   command: "goodbye",
-  package: "group",
-  description: "Set or control goodbye message",
+  package: "owner",
+  description: "Global goodbye setup",
 })(async (message, match) => {
-  await message.loadGroupInfo();
-  if (!message.isGroup) return message.send(theme.isGroup);
-  if (!message.isAdmin && !message.isFromMe) return message.send(theme.isAdmin);
-
-  const defaultText = `
-  *╭ׂ┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄─ׂ┄─ׅ─ׂ┄──*
-  *│  ̇─̣─̇─̣〘 gσσ∂вує 〙̣─̇─̣─̇*
-  *├┅┅┅┅┈┈┈┈┈┈┈┈┈┅┅┅◆*
-  *│❀ вує* &mention !
-  *│❀ fʀσм* &name
-  *├┅┅┅┅┈┈┈┈┈┈┈┈┈┅┅┅◆*
-  *│● ωє'ℓℓ мιѕѕ уσυ!*
-  *│● тαкє ¢αʀє & ѕтαу ѕαfє*
-  *│● ʀємαιɴιɴg мємвєʀѕ: &size*
-  *╰┉┉┉┉┈┈┈┈┈┈┈┈┉┉┉᛫᛭*
-   &pp `;
-
+  if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = message.conn.user.id.split(":")[0];
   match = (match || "").trim();
-  const { exit } =
-    (await groupDB(["exit"], { jid: message.from, content: {} }, "get")) || {};
+
+  const { exit } = (await personalDB(["exit"], {}, "get", botNumber)) || {};
   const status = exit?.status === "true" ? "true" : "false";
   const currentMsg = exit?.message || "";
 
   if (match.toLowerCase() === "get") {
-    if (status === "false") {
-      return await message.send(
-        `*🔹 Goodbye Setup Example:*\n` +
-          `.goodbye Bye &mention 👋\nWe'll miss you from *&name* 🥀\nRemaining members: *&size* \n&pp\n\n` +
-          `*Options:*\n.goodbye on – Enable goodbye\n.goodbye off – Disable goodbye\n.goodbye get – Show current goodbye\n\n` +
-          `*Supports:* &mention, &name, &size, &pp`
-      );
-    }
-    return await message.send(`*🔹 Current Goodbye Message:*\n${currentMsg}`);
+    return await message.send(
+      `*Current Goodbye Message:*\n${currentMsg || DEFAULT_GOODBYE}\n\nStatus: ${
+        status === "true" ? "✅ ON" : "❌ OFF"
+      }`
+    );
   }
 
-  if (match.toLowerCase() === "on") {
-    if (status === "true") return await message.send("_already activated_");
-
-    // If no message exists, automatically set the default message
-    const messageToSet = currentMsg || defaultText;
-
-    await groupDB(
+  if (match.toLowerCase() === "on" || match.toLowerCase() === "off") {
+    const isOn = match.toLowerCase() === "on";
+    await personalDB(
       ["exit"],
-      {
-        jid: message.from,
-        content: { status: "true", message: messageToSet },
-      },
-      "set"
+      { content: { status: isOn ? "true" : "false", message: currentMsg || DEFAULT_GOODBYE } },
+      "set",
+      botNumber
     );
-
-    if (!currentMsg) {
-      return await message.send(
-        "*goodbye activated*\n> default goodbye message has been set automatically"
-      );
-    }
-
-    return await message.send("*goodbye activated*");
-  }
-
-  if (match.toLowerCase() === "off") {
-    if (status === "false") return await message.send("_already deactivated_");
-    await groupDB(
-      ["exit"],
-      {
-        jid: message.from,
-        content: { status: "false", message: currentMsg },
-      },
-      "set"
-    );
-    return await message.send("*goodbye deactivated*");
+    return await message.send(`✅ Goodbye is now *${isOn ? "ON" : "OFF"}*`);
   }
 
   if (match.length) {
-    await groupDB(
+    await personalDB(
       ["exit"],
-      {
-        jid: message.from,
-        content: { status, message: match },
-      },
-      "set"
+      { content: { status, message: match } },
+      "set",
+      botNumber
     );
-    return await message.send("*goodbye message saved*");
+    return await message.send("✅ Custom goodbye message saved!");
   }
 
   return await message.send(
-    `*🔹 Goodbye Setup Example:*\n` +
-      `.goodbye Bye &mention 👋\nWe'll miss you from *&name* 🥀\nRemaining members: *&size* \n&pp\n\n` +
-      `*Options:*\n.goodbye on – Enable goodbye\n.goodbye off – Disable goodbye\n.goodbye get – Show current goodbye\n\n` +
-      `*Supports:* &mention, &name, &size, &pp`
+    `*Usage:*\n.goodbye on/off/get\n.goodbye <message>\n\n*Supports:* &mention, &name, &size, &pp`
   );
 });

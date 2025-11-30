@@ -1,7 +1,7 @@
-import { Module } from "../lib/plugins.js";
-import fetch from "node-fetch";
+const { Module } = require("../lib/plugins");
+const fetch = require("node-fetch");
 
-export default Module({
+Module({
   command: "gemini",
   package: "ai",
   description: "Chat with gemini",

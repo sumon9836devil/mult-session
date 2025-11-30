@@ -1,5 +1,5 @@
-/*import { Module } from '../lib/plugins.js';
-import { Group } from '../lib/database/model.js';
+/*const { Module } = require('../lib/plugins');
+const { Group } = require('../lib/database/model');
 
 Module({
     command: 'welcome',

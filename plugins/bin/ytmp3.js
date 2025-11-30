@@ -1,9 +1,9 @@
-import axios from 'axios';
-import yts from 'yt-search';
-import fs from 'fs';
-import path from 'path';
-import { getBuffer } from '../../lib/handier.js';
-import { fetchJson } from 'i-nrl';
+const axios = require("axios");
+const yts = require("yt-search");
+const fs = require("fs");
+const path = require("path");
+const { getBuffer } = require("../../lib/handier");
+const { fetchJson } = require("i-nrl");
 
 async function songCommand(Aliconn, searchQuery, message) {
   try {

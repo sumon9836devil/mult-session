@@ -1,7 +1,7 @@
-import { Module } from '../lib/plugins.js';
-import axios from 'axios';
+const { Module } = require('../lib/plugins');
+const axios = require('axios');
 
-export default Module({
+Module({
   command: 'git',
   package: 'downloader',
   description: 'Download GitHub repo zip',

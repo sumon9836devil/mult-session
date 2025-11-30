@@ -1,9 +1,9 @@
-import { Module } from "../lib/plugins.js";
-import config from "../config.js";
-import { getTheme } from "../Themes/themes.js";
+const { Module } = require("../lib/plugins");
+const config = require("../config");
+const { getTheme } = require("../Themes/themes");
 const theme = getTheme();
 
-export default Module({
+Module({
   command: "fact",
   package: "fun",
   description: "Get a random fact",
@@ -23,7 +23,7 @@ export default Module({
     ];
 
     const fact = facts[Math.floor(Math.random() * facts.length)];
-    await message.reply(`💡 *Random Fact*\n\n${fact}`);
+    await message.sendreply(`💡 *Random Fact*\n\n${fact}`);
   } catch (error) {
     console.error("Fact command error:", error);
     await message.send("❌ _Failed to get fact_");
@@ -50,7 +50,7 @@ Module({
     ];
 
     const joke = jokes[Math.floor(Math.random() * jokes.length)];
-    await message.reply(`😂 *Random Joke*\n\n${joke}`);
+    await message.sendreply(`😂 *Random Joke*\n\n${joke}`);
   } catch (error) {
     console.error("Joke command error:", error);
     await message.send("❌ _Failed to get joke_");
@@ -106,7 +106,7 @@ Module({
   try {
     const roll = Math.floor(Math.random() * 6) + 1;
     const dice = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-    await message.reply(`🎲 You rolled: ${dice[roll - 1]} *${roll}*`);
+    await message.sendreply(`🎲 You rolled: ${dice[roll - 1]} *${roll}*`);
   } catch (error) {
     console.error("Roll command error:", error);
     await message.send("❌ _Failed to roll dice_");

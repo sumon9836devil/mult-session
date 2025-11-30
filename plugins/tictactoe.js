@@ -1,44 +1,17 @@
-import { Module } from '../lib/plugins.js';
-import TicTacToe from '../lib/tictactoe-d.js';
-import cache from '../lib/cache.js';
+const { Module } = require('../lib/plugins');
+const TicTacToe = require('../lib/tictactoe-d');
+const games = new Map();
 
-const PREFIX = 'ttt:';
-const TTL = 1800; // 30 minutes
-
-async function getSession(chatId) {
-  const raw = await cache.get(PREFIX + chatId);
-  return raw ? JSON.parse(raw) : null;
+function srt_r(boardStr) {
+  return boardStr.split('\n').map(r => {
+    return r.split(' | ').map(v => {
+      if (v === '❌' || v === '⭕') return v;
+      return ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'][parseInt(v)-1];
+    }).join('');
+  }).join('\n');
 }
 
-async function setSession(chatId, session) {
-  await cache.set(PREFIX + chatId, JSON.stringify(session), TTL);
-}
-
-async function delSession(chatId) {
-  await cache.del(PREFIX + chatId);
-}
-
-function serializeGame(game) {
-  return {
-    p1: game.p1,
-    p2: game.p2,
-    _playerTurn: game._playerTurn,
-    _p1Board: game._p1Board,
-    _p2Board: game._p2Board,
-    totalMoves: game.totalMoves
-  };
-}
-
-function deserializeGame(data) {
-  const g = new TicTacToe(data.p1, data.p2);
-  g._playerTurn = data._playerTurn;
-  g._p1Board = data._p1Board;
-  g._p2Board = data._p2Board;
-  g.totalMoves = data.totalMoves || 0;
-  return g;
-}
-
-export default Module({
+Module({
   command: 'ttt',
   package: 'games',
   description: 'TicTacToe game',
@@ -46,108 +19,123 @@ export default Module({
   if (!message.isGroup) return;
   const input = match?.trim() || '';
   const is_ai = input === '--auto';
-  const existing = await getSession(message.from);
-  if (existing) return await message.send('_A game is already running_');
+  if (games.has(message.from)) return await message.send('_A game is already running_');
   const mention = message.raw.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
   const reply = message.quoted?.sender;
   const opponent = mention || reply || (is_ai ? 'auto' : null);
-  if (!opponent) return await message.send('_Please mention a user, reply to someone, or use --auto to play against bot_');
+  if (!opponent) return await message.send('_Please mention a user, reply to someone, or use --auto to play against bot_'); 
   const game = new TicTacToe(message.sender, opponent === 'auto' ? 'bot' : opponent);
   const session = {
     starter: message.sender,
     opponent,
-    gameState: serializeGame(game),
+    game,
     state: 'PLAYING',
     isAuto: opponent === 'auto',
     chatId: message.from,
     id: 'ttt-' + Date.now()
   };
-  await setSession(message.from, session);
-  const dis = `\n🎮 *TicTacToe*\n\nTurn ${game.activePlayer.split('@')[0]}...\n\n${srt_r(game.displayBoard())}\n\n▢ Room ID: ${session.id}\n▢ Player ❎: ${game.p1.split('@')[0]}\n▢ Player ⭕: ${session.isAuto ? 'Bot' : game.p2.split('@')[0]}\n• use num (1-9)\n• *surrender* to give up\n`;
+  
+  games.set(message.from, session);  
+  const dis = `
+🎮 *TicTacToe*
 
-  if (session.isAuto) {
-    await message.send(dis);
+Turn ${session.game.activePlayer.split('@')[0]}...
+
+${srt_r(session.game.displayBoard())}
+
+▢ Room ID: ${session.id}
+▢ Player ❎: ${session.game.p1.split('@')[0]}
+▢ Player ⭕: ${session.is_ai ? 'Bot' : session.game.p2.split('@')[0]}
+• use num (1-9)
+• *surrender* to give up
+`;
+
+  if (session.is_ai) {
+  await message.send(dis);
   } else {
-    await message.send({ text: dis, mentions: [game.p1, game.p2] });
+  await message.send({text: dis, mentions: [session.game.p1, session.game.p2]
+  });
   }
 });
 
 Module({
   on: 'text',
 })(async (message) => {
-  const session = await getSession(message.from);
+  const session = games.get(message.from);
   if (!session) return;
   const body = message.body.trim();
   const s_id = message.sender;
-  const gameData = session.gameState;
-  let game = deserializeGame(gameData);
-
   if (/^(surrender|give up)$/i.test(body)) {
-    if (session.isAuto && s_id === game.p1) {
+  if (session.is_ai && s_id === session.game.p1) {
       await message.send(`🏳️ ${s_id.split('@')[0]} surrendered, Bot wins\n▢ Room ID: ${session.id}`);
-      await delSession(message.from);
+      games.delete(message.from);
       return;
-    } else if (!session.isAuto && [game.p1, game.p2].includes(s_id)) {
-      const winner = s_id === game.p1 ? game.p2 : game.p1;
+    } else if (!session.is_ai && [session.game.p1, session.game.p2].includes(s_id)) {
+      const winner = s_id === session.game.p1 ? session.game.p2 : session.game.p1;
       await message.send(`🏳️ ${s_id.split('@')[0]} surrendered ${winner.split('@')[0]} wins\n▢ Room ID: ${session.id}`);
-      await delSession(message.from);
+      games.delete(message.from);
       return;
     }
   }
-
-  if (session.isAuto) {
-    if (s_id !== game.p1) return;
+  if (session.is_ai) {
+    if (s_id !== session.game.p1) return;
   } else {
-    if (![game.p1, game.p2].includes(s_id)) return;
-    if (s_id !== game.activePlayer) return;
+    if (![session.game.p1, session.game.p2].includes(s_id)) return;
+    if (s_id !== session.game.activePlayer) return;
   }
   if (!/^[1-9]$/.test(body)) return;
   const pos = parseInt(body) - 1;
-  const ok = game.play(pos);
+  const ok = session.game.play(pos);
   if (!ok) return message.send('_Position is already taken_');
-
   const mover = () => {
-    if (game.victor || game.totalMoves === 9) return;
+    if (session.game.victor || session.game.totalMoves === 9) return;
     const ap = [];
     for (let i = 0; i < 9; i++) {
-      if (!((game._p1Board | game._p2Board) & (1 << i))) {
+      if (!((session.game._p1Board | session.game._p2Board) & (1 << i))) {
         ap.push(i);
       }
     }
     if (ap.length > 0) {
       const ra = ap[Math.floor(Math.random() * ap.length)];
-      game.play(ra);
+      session.game.play(ra);
     }
   };
-  if (session.isAuto && game.activePlayer === 'bot' && !game.victor && game.totalMoves < 9) {
+  if (session.is_ai && session.game.activePlayer === 'bot' && !session.game.victor && session.game.totalMoves < 9) {
     mover();
   }
-  const winner = game.victor;
-  const tie = game.totalMoves === 9;
+  const winner = session.game.victor;
+  const tie = session.game.totalMoves === 9;
   let status;
   if (winner) {
-    if (session.isAuto) {
-      status = winner === game.p1 ? `🎉 ${winner.split('@')[0]} wins` : '🎉 Bot wins';
+    if (session.is_ai) {
+    status = winner === session.game.p1 ? `🎉 ${winner.split('@')[0]} wins` : '🎉 Bot wins';
     } else {
-      status = `🎉 ${winner.split('@')[0]} wins`;
+    status = `🎉 ${winner.split('@')[0]} wins`;
     }
   } else if (tie) {
     status = '🤝 Game ended in a draw';
   } else {
-    if (session.isAuto) {
-      status = game.activePlayer === game.p1 ? `🎲 Turn: ${game.activePlayer.split('@')[0]}` : '🎲 Turn: Bot';
+    if (session.is_ai) {
+    status = session.game.activePlayer === session.game.p1 ? `🎲 Turn: ${session.game.activePlayer.split('@')[0]}` : '🎲 Turn: Bot';
     } else {
-      status = `🎲 Turn: ${game.activePlayer.split('@')[0]}`;
+    status = `🎲 Turn: ${session.game.activePlayer.split('@')[0]}`;
     }
   }
 
-  // persist updated game
-  session.gameState = serializeGame(game);
-  await setSession(message.from, session);
+  const dis = `
+🎮 *TicTacToe*
 
-  const dis = `\n🎮 *TicTacToe*\n\n${status}\n\n${srt_r(game.displayBoard())}\n\n▢ Room ID: ${session.id}\n▢ Player ❎: ${game.p1.split('@')[0]}\n▢ Player ⭕: ${session.isAuto ? 'Bot' : game.p2.split('@')[0]}\n${!winner && !tie ? '• use number (1-9)\n• *surrender* to give up' : ''}\n`;
+${status}
+
+${srt_r(session.game.displayBoard())}
+
+▢ Room ID: ${session.id}
+▢ Player ❎: ${session.game.p1.split('@')[0]}
+▢ Player ⭕: ${session.is_ai ? 'Bot' : session.game.p2.split('@')[0]}
+${!winner && !tie ? '• use number (1-9)\n• *surrender* to give up' : ''}
+`;
 
   await message.send(dis);
-  if (winner || tie) await delSession(message.from);
+  if (winner || tie) games.delete(message.from);
 });
-
+   
