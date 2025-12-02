@@ -120,26 +120,34 @@ async function initializeSessions() {
       `♻️ Restoring ${sessionNumbers.length} sessions...`
     );
 
-    // Restore sessions with delay to avoid rate limits
-    for (const number of sessionNumbers) {
-      try {
-        console.log(`🔄 Restoring session for ${number}...`);
-        await startBot(number);
-        await delay(2000); // Delay between session starts
-      } catch (err) {
-        // Do NOT delete session on temporary error
-        console.error(`❌ Failed restoring session for ${number}:`, err);
-        // Log to a file for admin review
+    // Restore sessions with controlled concurrency to improve speed and limit resource usage
+    const concurrency = parseInt(process.env.RESTORE_CONCURRENCY || '3', 10) || 3;
+    const queue = sessionNumbers.slice();
+    const workers = Array.from({ length: Math.min(concurrency, queue.length) }).map(async () => {
+      while (queue.length) {
+        const number = queue.shift();
+        if (!number) break;
         try {
-          await fs.appendFile(
-            path.join(__dirname, "restore-errors.log"),
-            `[${new Date().toISOString()}] Session ${number} restore failed: ${err.message}\n`
-          );
-        } catch (logErr) {
-          console.error("❌ Failed to log restore error:", logErr);
+          console.log(`🔄 Restoring session for ${number}...`);
+          await startBot(number);
+          await delay(2000); // polite delay between starts per worker
+        } catch (err) {
+          // Do NOT delete session on temporary error
+          console.error(`❌ Failed restoring session for ${number}:`, err);
+          // Log to a file for admin review
+          try {
+            await fs.appendFile(
+              path.join(__dirname, "restore-errors.log"),
+              `[${new Date().toISOString()}] Session ${number} restore failed: ${err?.message || err}\n`
+            );
+          } catch (logErr) {
+            console.error("❌ Failed to log restore error:", logErr);
+          }
         }
       }
-    }
+    });
+
+    await Promise.all(workers);
 
     console.log(`✅ Initialization complete.  sessions active.`);
   } catch (err) {
