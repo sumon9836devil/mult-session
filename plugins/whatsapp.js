@@ -13,7 +13,7 @@ Module({
   usage: ".block <reply|tag|number>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     let jid;
     if (message.quoted) {
@@ -58,7 +58,7 @@ Module({
   usage: ".unblock <reply|tag|number>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     let jid;
     if (message.quoted) {
@@ -103,7 +103,7 @@ Module({
   description: "Get list of blocked users",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     await message.react("⏳");
 
@@ -142,7 +142,7 @@ Module({
   description: "Unblock all blocked users",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     const blocklist = await message.conn.fetchBlocklist();
 
@@ -187,7 +187,7 @@ Module({
   usage: ".setpp <reply to image | url>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     let buffer;
 
@@ -233,7 +233,7 @@ Module({
   description: "Remove bot profile picture",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     await message.react("⏳");
     const baileys = await import("baileys");
@@ -260,7 +260,7 @@ Module({
   usage: ".setname <name>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!match || match.trim().length === 0) {
       return message.send("❌ _Provide new name_\n\n*Example:* .setname MyBot");
@@ -288,7 +288,7 @@ Module({
   description: "Get bot's current name",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     const botName =
       message.conn.user?.name ||
@@ -309,7 +309,7 @@ Module({
   usage: ".setbio <text>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!match || match.trim().length === 0) {
       return message.send(
@@ -340,7 +340,7 @@ Module({
   description: "Get bot's current status/bio",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     const baileys = await import("baileys");
     const { jidNormalizedUser } = baileys;
@@ -369,7 +369,7 @@ Module({
   usage: ".getbio <reply|tag>",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     // ✅ NEW: Handle both participant and participantAlt
     const jid =
@@ -408,7 +408,7 @@ Module({
   usage: ".getname <reply|tag>",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     // ✅ NEW: Handle both participant and participantAlt
     const jid =
@@ -457,7 +457,7 @@ Module({
   usage: ".broadcast <message>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!match) {
       return message.send(
@@ -508,7 +508,7 @@ Module({
   usage: ".forward <number>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!message.quoted) {
       return message.send("❌ _Reply to a message to forward_");
@@ -553,7 +553,7 @@ Module({
   usage: ".join <invite link>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!match) {
       return message.send(
@@ -601,7 +601,7 @@ Module({
   usage: ".leaveall <exception1,exception2>",
 })(async (message, match) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     const chats = await message.conn.groupFetchAllParticipating();
     const groups = Object.values(chats);
@@ -655,7 +655,7 @@ Module({
   description: "List all group chats",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     const chats = await message.conn.groupFetchAllParticipating();
     const groups = Object.values(chats);
@@ -696,7 +696,7 @@ Module({
   usage: ".save <reply to message>",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!message.quoted) {
       return message.send("❌ _Reply to a message to save_");
@@ -748,7 +748,7 @@ Module({
   usage: ".delete <reply to bot message>",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!message.quoted) {
       return message.send("❌ _Reply to bot's message to delete it_");
@@ -774,7 +774,7 @@ Module({
   usage: ".quoted <reply to message>",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
 
     if (!message.quoted) {
       return message.send("❌ _Reply to a message_");
@@ -808,7 +808,7 @@ Module({
   usage: ".jid <reply|tag>",
 })(async (message) => {
   try {
-    if (!message.isFromMe) return message.send(theme.isFromMe);
+    if (!message.isfromMe) return message.send(theme.isfromMe);
     const jid =
       message.quoted?.participant ||
       message.quoted?.participantAlt ||

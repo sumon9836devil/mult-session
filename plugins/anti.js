@@ -429,12 +429,24 @@ Module({ on: "text" })(async (message) => {
     if (!message.isGroup) return;
     if (message.isFromMe) return;
     if (message.isAdmin) return;
+
     const settings = (await getGroupSetting('status', message.from)) || { status: "false", action: "null", warns: {}, warn_count: 3 };
     if (settings.status !== "true") return;
 
+    const text = (message.body || message.caption || "").toString().trim();
+
+    // Check text-based detection
     if (hasStatusMention(text)) {
-    await handleViolationStatus(message, message.sender, settings, "posting status invites/mentions");
+      return await handleViolationStatus(message, message.sender, settings, "status mention");
     }
+
+    // Check real WhatsApp mention in contextInfo
+    const mentioned = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+
+    if (mentioned.includes("status@broadcast")) {
+      return await handleViolationStatus(message, message.sender, settings, "mentioning status");
+    }
+
   } catch (e) {
     console.error("❌ antistatus handler error:", e);
   }

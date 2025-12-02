@@ -44,7 +44,7 @@ const checkPermissions = async (message) => {
       return false;
     }
 
-    if (!message.isAdmin && !message.isFromMe) {
+    if (!message.isAdmin && !message.isfromMe) {
       await message.send(
         theme.isAdmin || "❌ _This command requires admin privileges_"
       );
@@ -207,7 +207,7 @@ Module({
         areJidsSame(message, adminId, jid)
       );
 
-      if (isTargetAdmin && !message.isFromMe) {
+      if (isTargetAdmin && !message.isfromMe) {
         await message.send(`❌ _Cannot kick admin @${jid.split("@")[0]}_`, {
           mentions: [jid],
         });
@@ -824,7 +824,7 @@ Module({
     await message.loadGroupInfo();
 
     if (!message.isGroup) return message.send(theme.isGroup);
-    if (!message.isFromMe) {
+    if (!message.isfromMe) {
       return message.send("❌ _Only bot owner can use this_");
     }
 
@@ -942,7 +942,7 @@ Module({
     await message.loadGroupInfo();
 
     if (!message.isGroup) return message.send(theme.isGroup);
-    if (!message.isAdmin && !message.isFromMe)
+    if (!message.isAdmin && !message.isfromMe)
       return message.send(theme.isAdmin);
 
     if (!match) {
@@ -992,7 +992,7 @@ Module({
     await message.loadGroupInfo();
 
     if (!message.isGroup) return message.send(theme.isGroup);
-    if (!message.isAdmin && !message.isFromMe)
+    if (!message.isAdmin && !message.isfromMe)
       return message.send(theme.isAdmin);
     if (!message.isBotAdmin) return message.send(theme.isBotAdmin);
 
@@ -1037,7 +1037,7 @@ Module({
     await message.loadGroupInfo();
 
     if (!message.isGroup) return message.send(theme.isGroup);
-    if (!message.isAdmin && !message.isFromMe)
+    if (!message.isAdmin && !message.isfromMe)
       return message.send(theme.isAdmin);
 
     const text = match || "📢 *ATTENTION EVERYONE*";
@@ -1070,7 +1070,7 @@ Module({
     await message.loadGroupInfo();
 
     if (!message.isGroup) return message.send(theme.isGroup);
-    if (!message.isAdmin && !message.isFromMe)
+    if (!message.isAdmin && !message.isfromMe)
       return message.send(theme.isAdmin);
 
     const text = match || message.quoted?.body || "📢 *Hidden Tag*";
@@ -1118,7 +1118,7 @@ Module({
     await message.loadGroupInfo();
 
     if (!message.isGroup) return message.send(theme.isGroup);
-    if (!message.isAdmin && !message.isFromMe)
+    if (!message.isAdmin && !message.isfromMe)
       return message.send(theme.isAdmin);
 
     if (!message.quoted) {
