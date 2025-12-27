@@ -1,7 +1,4 @@
-import { Module } from '../lib/plugins.js';
-const channelJid = "120363400835083687@newsletter";
-const channelName = "";
-const serverMessageId = 6;
+import { Module } from "../lib/plugins.js";
 
 Module({
   command: "ping",
@@ -18,7 +15,7 @@ Module({
     },
     message: {
       contactMessage: {
-        displayName: message.pushName7,
+        displayName: "𝘴น𝚖𝔞ꪦ_𝗿ǿⲩ",
         vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;a,;;;\nFN:'DEMON'\nitem1.TEL;waid=${
           message.conn.user.id.split("@")[0]
         }:${
@@ -37,7 +34,6 @@ Module({
     "🎳",
     "🎀",
     "🌸",
-    "",
     "🍥",
     "🎀",
     "🍓",
@@ -86,8 +82,6 @@ Module({
     "🐞",
     "🐍",
     "🕊️",
-    "🕷️",
-    "🕸️",
     "🎃",
     "🏟️",
     "🎡",

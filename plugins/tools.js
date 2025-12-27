@@ -1,8 +1,20 @@
-import { Module } from '../lib/plugins.js';
-import { personalDB } from '../lib/database/index.js';
-import config from '../config.js';
-import { getTheme } from '../Themes/themes.js';
+import { Module } from "../lib/plugins.js";
+// old personalDB removed
+import config from "../config.js";
+import { getTheme } from "../Themes/themes.js";
+// <-- IMPORT YOUR DB INSTANCE HERE (adjust path if needed)
+import { db } from "../lib/client.js";
+
 const theme = getTheme();
+
+// helper to resolve bot number safely
+function resolveBotNumber(conn) {
+  // prefer conn.id if provided, else fallback to conn.user.id split
+  if (!conn) return null;
+  if (conn.id) return String(conn.id);
+  if (conn.user && conn.user.id) return String(conn.user.id).split(":")[0];
+  return null;
+}
 
 // 🔹 Auto Status Seen
 Module({
@@ -11,28 +23,29 @@ Module({
   description: "Toggle auto view WhatsApp status",
 })(async (message, match) => {
   if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = resolveBotNumber(message.conn);
+  if (!botNumber) return message.send("❌ Bot number not found.");
 
-  const botNumber = message.conn.user.id.split(":")[0];
   const input = match?.trim().toLowerCase();
+
+  const key = "autostatus_seen"; // hot-key name used in handler
 
   if (input === "on" || input === "off") {
     await message.react("⏳");
-    const result = await personalDB(
-      ["status_view"],
-      { content: input === "on" ? "true" : "false" },
-      "set",
-      botNumber
-    );
-    await message.react(result ? "✅" : "❌");
-    return await message.send(
-      result
-        ? `✅ *Auto status view is now \`${input.toUpperCase()}\`*`
-        : "❌ *Error updating auto status view*"
-    );
+    try {
+      if (input === "on") db.setHot(botNumber, key, true);
+      else db.delHot(botNumber, key);
+      await message.react("✅");
+      return await message.send(
+        `✅ *Auto status view is now \`${input.toUpperCase()}\`*`
+      );
+    } catch (e) {
+      await message.react("❌");
+      return await message.send("❌ *Error updating auto status view*");
+    }
   }
 
-  const data = await personalDB(["status_view"], {}, "get", botNumber);
-  const status = data?.status_view === "true";
+  const status = db.get(botNumber, key, false) === true;
   return await message.send(
     `⚙️ *Auto Status View*\n> Status: ${
       status ? "✅ ON" : "❌ OFF"
@@ -47,28 +60,28 @@ Module({
   description: "Toggle auto typing in chats",
 })(async (message, match) => {
   if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = resolveBotNumber(message.conn);
+  if (!botNumber) return message.send("❌ Bot number not found.");
 
-  const botNumber = message.conn.user.id.split(":")[0];
   const input = match?.trim().toLowerCase();
+  const key = "autotyping";
 
   if (input === "on" || input === "off") {
     await message.react("⏳");
-    const result = await personalDB(
-      ["autotyping"],
-      { content: input === "on" ? "true" : "false" },
-      "set",
-      botNumber
-    );
-    await message.react(result ? "✅" : "❌");
-    return await message.send(
-      result
-        ? `✅ *Auto typing is now \`${input.toUpperCase()}\`*`
-        : "❌ *Error updating auto typing*"
-    );
+    try {
+      if (input === "on") db.setHot(botNumber, key, true);
+      else db.delHot(botNumber, key);
+      await message.react("✅");
+      return await message.send(
+        `✅ *Auto typing is now \`${input.toUpperCase()}\`*`
+      );
+    } catch (e) {
+      await message.react("❌");
+      return await message.send("❌ *Error updating auto typing*");
+    }
   }
 
-  const data = await personalDB(["autotyping"], {}, "get", botNumber);
-  const status = data?.autotyping === "true";
+  const status = db.get(botNumber, key, false) === true;
   return await message.send(
     `⚙️ *Auto Typing*\n> Status: ${
       status ? "✅ ON" : "❌ OFF"
@@ -83,28 +96,28 @@ Module({
   description: "Toggle auto voice recording in chats",
 })(async (message, match) => {
   if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = resolveBotNumber(message.conn);
+  if (!botNumber) return message.send("❌ Bot number not found.");
 
-  const botNumber = message.conn.user.id.split(":")[0];
   const input = match?.trim().toLowerCase();
+  const key = "autorecord";
 
   if (input === "on" || input === "off") {
     await message.react("⏳");
-    const result = await personalDB(
-      ["autorecord"],
-      { content: input === "on" ? "true" : "false" },
-      "set",
-      botNumber
-    );
-    await message.react(result ? "✅" : "❌");
-    return await message.send(
-      result
-        ? `✅ *Auto record is now \`${input.toUpperCase()}\`*`
-        : "❌ *Error updating auto record*"
-    );
+    try {
+      if (input === "on") db.setHot(botNumber, key, true);
+      else db.delHot(botNumber, key);
+      await message.react("✅");
+      return await message.send(
+        `✅ *Auto record is now \`${input.toUpperCase()}\`*`
+      );
+    } catch (e) {
+      await message.react("❌");
+      return await message.send("❌ *Error updating auto record*");
+    }
   }
 
-  const data = await personalDB(["autorecord"], {}, "get", botNumber);
-  const status = data?.autorecord === "true";
+  const status = db.get(botNumber, key, false) === true;
   return await message.send(
     `🎤 *Auto Record*\n> Status: ${
       status ? "✅ ON" : "❌ OFF"
@@ -119,30 +132,31 @@ Module({
   description: "Toggle auto react to messages",
 })(async (message, match) => {
   if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = resolveBotNumber(message.conn);
+  if (!botNumber) return message.send("❌ Bot number not found.");
 
-  const botNumber = message.conn.user.id.split(":")[0];
   const input = match?.trim().toLowerCase();
+  const key = "autoreact";
 
   if (input === "on" || input === "off") {
     await message.react("⏳");
-    const result = await personalDB(
-      ["autoreact"],
-      { content: input === "on" ? "true" : "false" },
-      "set",
-      botNumber
-    );
-    await message.react(result ? "✅" : "❌");
-    return await message.send(
-      result
-        ? `✅ *AutoReact is now \`${input.toUpperCase()}\`*`
-        : "❌ *Error updating AutoReact*"
-    );
+    try {
+      if (input === "on") db.setHot(botNumber, key, true);
+      else db.delHot(botNumber, key);
+      await message.react("✅");
+      return await message.send(
+        `✅ *AutoReact is now \`${input.toUpperCase()}\`*`
+      );
+    } catch (e) {
+      await message.react("❌");
+      return await message.send("❌ *Error updating AutoReact*");
+    }
   }
 
-  const settings = await personalDB(["autoreact"], {}, "get", botNumber);
+  const status = db.get(botNumber, key, false) === true;
   return await message.send(
     `⚙️ *AutoReact*\n> Status: ${
-      settings?.autoreact === "true" ? "✅ ON" : "❌ OFF"
+      status ? "✅ ON" : "❌ OFF"
     }\n\nUse:\n• autoreact on\n• autoreact off`
   );
 });
@@ -154,28 +168,28 @@ Module({
   description: "Block users who call the bot",
 })(async (message, match) => {
   if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = resolveBotNumber(message.conn);
+  if (!botNumber) return message.send("❌ Bot number not found.");
 
-  const botNumber = message.conn.user.id.split(":")[0];
   const input = match?.trim().toLowerCase();
+  const key = "anticall";
 
   if (input === "on" || input === "off") {
     await message.react("⏳");
-    const result = await personalDB(
-      ["anticall"],
-      { content: input === "on" ? "true" : "false" },
-      "set",
-      botNumber
-    );
-    await message.react(result ? "✅" : "❌");
-    return await message.send(
-      result
-        ? `✅ *AntiCall is now \`${input.toUpperCase()}\`*`
-        : "❌ *Error updating AntiCall*"
-    );
+    try {
+      if (input === "on") db.setHot(botNumber, key, true);
+      else db.delHot(botNumber, key);
+      await message.react("✅");
+      return await message.send(
+        `✅ *AntiCall is now \`${input.toUpperCase()}\`*`
+      );
+    } catch (e) {
+      await message.react("❌");
+      return await message.send("❌ *Error updating AntiCall*");
+    }
   }
 
-  const data = await personalDB(["anticall"], {}, "get", botNumber);
-  const status = data?.anticall === "true";
+  const status = db.get(botNumber, key, false) === true;
   return await message.send(
     `⚙️ *AntiCall*\n> Status: ${
       status ? "✅ ON" : "❌ OFF"
@@ -190,28 +204,28 @@ Module({
   description: "Toggle auto read messages",
 })(async (message, match) => {
   if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = resolveBotNumber(message.conn);
+  if (!botNumber) return message.send("❌ Bot number not found.");
 
-  const botNumber = message.conn.user.id.split(":")[0];
   const input = match?.trim().toLowerCase();
+  const key = "autoread";
 
   if (input === "on" || input === "off") {
     await message.react("⏳");
-    const result = await personalDB(
-      ["autoread"],
-      { content: input === "on" ? "true" : "false" },
-      "set",
-      botNumber
-    );
-    await message.react(result ? "✅" : "❌");
-    return await message.send(
-      result
-        ? `✅ *AutoRead is now \`${input.toUpperCase()}\`*`
-        : "❌ *Error updating AutoRead*"
-    );
+    try {
+      if (input === "on") db.setHot(botNumber, key, true);
+      else db.delHot(botNumber, key);
+      await message.react("✅");
+      return await message.send(
+        `✅ *AutoRead is now \`${input.toUpperCase()}\`*`
+      );
+    } catch (e) {
+      await message.react("❌");
+      return await message.send("❌ *Error updating AutoRead*");
+    }
   }
 
-  const data = await personalDB(["autoread"], {}, "get", botNumber);
-  const status = data?.autoread === "true";
+  const status = db.get(botNumber, key, false) === true;
   return await message.send(
     `⚙️ *AutoRead*\n> Status: ${
       status ? "✅ ON" : "❌ OFF"
@@ -226,28 +240,28 @@ Module({
   description: "Toggle auto save viewed statuses",
 })(async (message, match) => {
   if (!message.isFromMe) return message.send(theme.isfromMe);
+  const botNumber = resolveBotNumber(message.conn);
+  if (!botNumber) return message.send("❌ Bot number not found.");
 
-  const botNumber = message.conn.user.id.split(":")[0];
   const input = match?.trim().toLowerCase();
+  const key = "save_status";
 
   if (input === "on" || input === "off") {
     await message.react("⏳");
-    const result = await personalDB(
-      ["save_status"],
-      { content: input === "on" ? "true" : "false" },
-      "set",
-      botNumber
-    );
-    await message.react(result ? "✅" : "❌");
-    return await message.send(
-      result
-        ? `✅ *AutoSave Status is now \`${input.toUpperCase()}\`*`
-        : "❌ *Error updating AutoSave Status*"
-    );
+    try {
+      if (input === "on") db.setHot(botNumber, key, true);
+      else db.delHot(botNumber, key);
+      await message.react("✅");
+      return await message.send(
+        `✅ *AutoSave Status is now \`${input.toUpperCase()}\`*`
+      );
+    } catch (e) {
+      await message.react("❌");
+      return await message.send("❌ *Error updating AutoSave Status*");
+    }
   }
 
-  const data = await personalDB(["save_status"], {}, "get", botNumber);
-  const status = data?.save_status === "true";
+  const status = db.get(botNumber, key, false) === true;
   return await message.send(
     `⚙️ *AutoSave Status*\n> Status: ${
       status ? "✅ ON" : "❌ OFF"

@@ -8,7 +8,7 @@ import initializeTelegramBot from "./bot.js";
 import { forceLoadPlugins } from "./lib/plugins.js";
 //import { createSockAndStart, attachHandlersToSock } from "./lib/client.js";
 
-import { manager, main } from "./lib/client.js";
+import { manager, main, db } from "./lib/client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -155,7 +155,12 @@ app.get("/sessions", (req, res) => {
 app.get("/", (req, res) =>
   res.send("Baileys Multi-session Server (pair-code ready)")
 );
-
+// graceful shutdown
+process.on("SIGINT", async () => {
+  await db.flush();
+  await db.close();
+  process.exit(0);
+});
 // -- startup
 const PORT = process.env.PORT || 3000;
 
@@ -170,6 +175,7 @@ const PORT = process.env.PORT || 3000;
       // start all sessions that were registered in meta (staggered by SessionManager)
       try {
         await manager.startAll();
+        await db.ready();
         console.log("Attempted to start registered sessions");
       } catch (e) {
         console.warn("startAll err", e?.message || e);
